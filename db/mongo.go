@@ -1,26 +1,25 @@
 package db
 
 import (
-    "context"
-    "log"
-    "time"
+	"context"
+	"log"
+	"time"
 
-    "go.mongodb.org/mongo-driver/mongo"
-    "go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var Client *mongo.Client
 
 func Connect(uri string) {
-    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-    client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-    if err != nil {
-        log.Fatal("MongoDB connection error:", err)
-    }
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	if err != nil {
+		log.Fatal("MongoDB connection error:", err)
+	}
 
-    Client = client
-    log.Println("MongoDB connected")
-	
+	Client = client
+	log.Println("MongoDB connected")
 }

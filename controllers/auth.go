@@ -1,15 +1,19 @@
 package controllers
 
 import (
-	"encoding/json"
-	"net/http"
-	"strings"
+    "encoding/json"
+    "net/http"
+    "strings"
+    "time"
 
-	"go-backend/db"
-	"go-backend/models"
+    "go-backend/db"
+    "go-backend/models"
 
-	"golang.org/x/crypto/bcrypt"
+    "golang.org/x/crypto/bcrypt"
+    "github.com/golang-jwt/jwt/v5"
 )
+
+var jwtSecret = []byte("your-secret-key") // change this to a secure key
 
 func Signup(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
@@ -24,9 +28,8 @@ func Signup(w http.ResponseWriter, r *http.Request) {
         json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request"})
         return
     }
-	user.Email = strings.ToLower(user.Email) // convert email to lowercase
 
-
+    user.Email = strings.ToLower(user.Email)
     hashed, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
     user.Password = string(hashed)
 
@@ -52,14 +55,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
         Email    string `json:"email"`
         Password string `json:"password"`
     }
-	credentials.Email = strings.ToLower(credentials.Email)
 
     json.NewDecoder(r.Body).Decode(&credentials)
+    credentials.Email = strings.ToLower(credentials.Email)
 
     collection := db.Client.Database("uni_notes").Collection("users")
     var user models.User
     err := collection.FindOne(r.Context(), map[string]string{"email": credentials.Email}).Decode(&user)
-
     if err != nil {
         w.WriteHeader(http.StatusUnauthorized)
         json.NewEncoder(w).Encode(map[string]string{"error": "Invalid email or password"})
@@ -72,5 +74,15 @@ func Login(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    json.NewEncoder(w).Encode(map[string]interface{}{"user": map[string]string{"name": user.Name, "email": user.Email}})
+    // Create JWT
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+        "email": user.Email,
+        "exp":   time.Now().Add(time.Hour * 72).Unix(),
+    })
+    tokenString, _ := token.SignedString(jwtSecret)
+
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "user":  map[string]string{"name": user.Name, "email": user.Email},
+        "token": tokenString,
+    })
 }
