@@ -11,15 +11,18 @@ import (
 )
 
 func main() {
-	db.Connect("mongodb://localhost:27017") // connect to MongoDB
+	db.Connect("mongodb://localhost:27017") 
 
 	mux := http.NewServeMux()
 
-	// Auth routes
 	mux.HandleFunc("/signup", controllers.Signup)
 	mux.HandleFunc("/login", controllers.Login)
 
-	// Notes CRUD
+	mux.HandleFunc("/profile", controllers.UpdateUser)
+
+
+
+	
 	mux.HandleFunc("/note", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:

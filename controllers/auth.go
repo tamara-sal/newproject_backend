@@ -1,16 +1,18 @@
 package controllers
 
 import (
-    "encoding/json"
-    "net/http"
-    "strings"
-    "time"
+	"context"
+	"encoding/json"
+	"net/http"
+	"strings"
+	"time"
 
-    "go-backend/db"
-    "go-backend/models"
+	"go-backend/db"
+	"go-backend/models"
 
-    "golang.org/x/crypto/bcrypt"
-    "github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var jwtSecret = []byte("your-secret-key") // change this to a secure key
@@ -85,4 +87,37 @@ func Login(w http.ResponseWriter, r *http.Request) {
         "user":  map[string]string{"name": user.Name, "email": user.Email},
         "token": tokenString,
     })
+	
+}
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	collection := db.Client.Database("uni_notes").Collection("users")
+	filter := bson.M{"email": req.Email}
+	update := bson.M{"$set": bson.M{"name": req.Name}}
+
+	_, err := collection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		http.Error(w, "Failed to update profile", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"name":  req.Name,
+		"email": req.Email,
+	})
 }
