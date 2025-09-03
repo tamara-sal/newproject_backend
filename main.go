@@ -37,6 +37,8 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
+	mux.HandleFunc("/clothes", controllers.GetClothesByCategory)
+	mux.HandleFunc("/clothes/add", controllers.AddCloth)
 
 	handler := cors.AllowAll().Handler(mux)
 	log.Println("Server running on http://localhost:8080")
